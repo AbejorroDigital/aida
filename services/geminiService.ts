@@ -1,6 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { LanguageCode } from "../types";
 
+/**
+ * NOTE FOR DEPLOYMENT (Vercel/Netlify):
+ * Ensure you have an environment variable named VITE_GEMINI_API_KEY or GEMINI_API_KEY
+ * configured in your deployment dashboard. Vite will inject this during the build process.
+ */
 const API_KEY = process.env.API_KEY;
 
 // Map language codes to full names for the prompt
@@ -45,6 +50,7 @@ export const transcribeAudioStream = async (
       },
       config: {
         temperature: 0.2, // Lower temperature for more accurate transcription
+        maxOutputTokens: 2048,      
       }
     });
 

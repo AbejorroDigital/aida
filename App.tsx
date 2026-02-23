@@ -125,7 +125,7 @@ const App: React.FC = () => {
     
     // Check if key is available
     if (!process.env.API_KEY) {
-      setError("API Key missing. Please configure the environment.");
+      setError("API Key missing. Please configure VITE_GEMINI_API_KEY in your environment.");
       setStatus(ProcessingStatus.ERROR);
       return;
     }
@@ -303,39 +303,54 @@ const App: React.FC = () => {
         </section>
 
         {/* Transcription Area */}
-        <section className="flex-1 flex flex-col min-h-[400px] bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <section className="flex-1 flex flex-col min-h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300">
           {/* Toolbar */}
-          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Transcription Output
-            </span>
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={copyToClipboard} title="Copy to Clipboard" disabled={!transcript}>
-                <Copy size={16} />
+              <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
+                Live Transcription
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" onClick={copyToClipboard} title="Copy to Clipboard" disabled={!transcript} className="h-9 w-9 p-0">
+                <Copy size={18} />
               </Button>
-              <Button variant="ghost" onClick={downloadTxt} title="Download as .txt" disabled={!transcript}>
-                <Download size={16} />
+              <Button variant="ghost" onClick={downloadTxt} title="Download as .txt" disabled={!transcript} className="h-9 w-9 p-0">
+                <Download size={18} />
               </Button>
-              <Button variant="ghost" onClick={clearText} title="Clear Text" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" disabled={!transcript}>
-                <Trash2 size={16} />
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+              <Button variant="ghost" onClick={clearText} title="Clear Text" className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" disabled={!transcript}>
+                <Trash2 size={18} />
               </Button>
             </div>
           </div>
 
-          {/* Text Area */}
-          <div className="relative flex-1">
+          {/* Text Area Container */}
+          <div className="relative flex-1 flex flex-col bg-gray-50/30 dark:bg-gray-900/10">
             <textarea
               ref={textareaRef}
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
               placeholder="Your transcription will appear here..."
-              className="w-full h-full p-6 bg-transparent border-none resize-none focus:ring-0 custom-scrollbar text-lg leading-relaxed font-normal text-gray-700 dark:text-gray-200 outline-none"
+              className="flex-1 w-full p-8 bg-transparent border-none resize-none focus:ring-0 custom-scrollbar text-xl leading-[1.8] font-normal text-gray-800 dark:text-gray-100 outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700"
               spellCheck={false}
             />
             
             {!transcript && status === ProcessingStatus.IDLE && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-gray-600 pointer-events-none">
-                <p>Waiting for audio...</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-300 dark:text-gray-700 pointer-events-none select-none">
+                <div className="mb-4 opacity-20">
+                  <FileAudio size={64} strokeWidth={1} />
+                </div>
+                <p className="text-sm font-medium tracking-wide">Waiting for audio input or file upload...</p>
+              </div>
+            )}
+
+            {/* Status Indicator Overlay (Bottom Right) */}
+            {(status === ProcessingStatus.STREAMING || status === ProcessingStatus.PROCESSING) && (
+              <div className="absolute bottom-6 right-6 px-4 py-2 bg-indigo-600 text-white rounded-full shadow-lg flex items-center gap-2 text-xs font-bold animate-in fade-in zoom-in duration-300">
+                <Loader2 className="animate-spin" size={14} />
+                {status === ProcessingStatus.STREAMING ? 'TRANSCRIBING...' : 'PROCESSING...'}
               </div>
             )}
           </div>
