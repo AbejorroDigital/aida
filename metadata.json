@@ -1,0 +1,7 @@
+{
+  "name": "Aida - AI Transcription",
+  "description": "High-fidelity audio transcription powered by Gemini 3 Flash. Supports real-time recording and file uploads in multiple languages.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
