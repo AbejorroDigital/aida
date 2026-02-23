@@ -1,0 +1,2 @@
+# aida
+transcriptor de audio
