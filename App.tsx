@@ -73,10 +73,22 @@ const App: React.FC = () => {
   const handleToggleTheme = () => setIsDarkMode(!isDarkMode);
 
   const startRecording = async () => {
+    if (!window.MediaRecorder) {
+      setError("Your browser does not support audio recording. Please use a modern browser.");
+      return;
+    }
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Determine supported MIME type (important for mobile/iOS)
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : MediaRecorder.isTypeSupported('audio/mp4') 
+          ? 'audio/mp4' 
+          : 'audio/aac';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -88,8 +100,8 @@ const App: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await processAudio(audioBlob, 'audio/webm');
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        await processAudio(audioBlob, mimeType);
         
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
@@ -97,9 +109,12 @@ const App: React.FC = () => {
 
       mediaRecorder.start();
       setStatus(ProcessingStatus.RECORDING);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Unable to access microphone. Please check permissions.");
+      let msg = "Unable to access microphone.";
+      if (err.name === 'NotAllowedError') msg = "Microphone access denied. Please enable it in settings.";
+      if (err.name === 'NotFoundError') msg = "No microphone found on this device.";
+      setError(msg);
       setStatus(ProcessingStatus.ERROR);
     }
   };
@@ -180,39 +195,39 @@ const App: React.FC = () => {
       
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 h-14 md:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/20">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-base md:text-lg shadow-lg shadow-indigo-500/20">
               A
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+            <h1 className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
               Aida
             </h1>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <select 
               value={language} 
               onChange={(e) => setLanguage(e.target.value as LanguageCode)}
-              className="bg-gray-100 dark:bg-gray-800 border-none rounded-lg py-1.5 px-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="bg-gray-100 dark:bg-gray-800 border-none rounded-lg py-1 px-2 md:py-1.5 md:px-3 text-xs md:text-sm font-medium focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="es">Español</option>
-              <option value="en">English</option>
-              <option value="fr">Français</option>
+              <option value="es">ES</option>
+              <option value="en">EN</option>
+              <option value="fr">FR</option>
             </select>
             
             <button 
               onClick={handleToggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
+              className="p-1.5 md:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
             >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 flex flex-col gap-8">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 md:py-8 flex flex-col gap-4 md:gap-8">
         
         {/* Error Banner */}
         {error && (
@@ -303,25 +318,28 @@ const App: React.FC = () => {
         </section>
 
         {/* Transcription Area */}
-        <section className="flex-1 flex flex-col min-h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300">
+        <section className="flex-1 flex flex-col min-h-[350px] md:min-h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300">
           {/* Toolbar */}
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
-                Live Transcription
+              <span className="text-[10px] md:text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
+                Transcription
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" onClick={copyToClipboard} title="Copy to Clipboard" disabled={!transcript} className="h-9 w-9 p-0">
-                <Copy size={18} />
+              <Button variant="ghost" onClick={copyToClipboard} title="Copy" disabled={!transcript} className="h-8 w-8 md:h-9 md:w-9 p-0">
+                <Copy size={16} className="md:hidden" />
+                <Copy size={18} className="hidden md:block" />
               </Button>
-              <Button variant="ghost" onClick={downloadTxt} title="Download as .txt" disabled={!transcript} className="h-9 w-9 p-0">
-                <Download size={18} />
+              <Button variant="ghost" onClick={downloadTxt} title="Download" disabled={!transcript} className="h-8 w-8 md:h-9 md:w-9 p-0">
+                <Download size={16} className="md:hidden" />
+                <Download size={18} className="hidden md:block" />
               </Button>
               <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-              <Button variant="ghost" onClick={clearText} title="Clear Text" className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" disabled={!transcript}>
-                <Trash2 size={18} />
+              <Button variant="ghost" onClick={clearText} title="Clear" className="h-8 w-8 md:h-9 md:w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" disabled={!transcript}>
+                <Trash2 size={16} className="md:hidden" />
+                <Trash2 size={18} className="hidden md:block" />
               </Button>
             </div>
           </div>
@@ -333,7 +351,7 @@ const App: React.FC = () => {
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
               placeholder="Your transcription will appear here..."
-              className="flex-1 w-full p-8 bg-transparent border-none resize-none focus:ring-0 custom-scrollbar text-xl leading-[1.8] font-normal text-gray-800 dark:text-gray-100 outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700"
+              className="flex-1 w-full p-4 md:p-8 bg-transparent border-none resize-none focus:ring-0 custom-scrollbar text-base md:text-xl leading-[1.6] md:leading-[1.8] font-normal text-gray-800 dark:text-gray-100 outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700"
               spellCheck={false}
             />
             

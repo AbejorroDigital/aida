@@ -36,6 +36,15 @@
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background-color: rgba(107, 114, 128, 0.8);
       }
+      /* Mobile optimizations */
+      button, select, .cursor-pointer {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .no-select {
+        -webkit-user-select: none;
+        user-select: none;
+      }
     </style>
   <script type="importmap">
 {
